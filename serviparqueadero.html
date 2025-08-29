@@ -1,110 +1,53 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Recibo de Parqueadero</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
-    body {
-      font-family: 'Inter', sans-serif;
-      background-color: #f0f2f5;
+<script>
+  function cargarDatos() {
+    const params = new URLSearchParams(window.location.search);
+
+    // Si no hay query (?a=b), intentamos con hash (#a=b)
+    let hashParams = new URLSearchParams();
+    if (!window.location.search && window.location.hash) {
+      const hash = window.location.hash.replace(/^#/, '');
+      hashParams = new URLSearchParams(hash);
     }
-    .recibo {
-      width: 80mm;            /* ancho rollo */
-      max-width: 300px;
-      margin: 20px auto;
-      background-color: #ffffff;
-      padding: 1rem;
-      border-radius: 8px;
-      box-shadow: 0 4px 6px rgba(0,0,0,.1);
-      text-align: center; /* centramos por defecto encabezado y cuerpo */
+
+    // Helper: busca la clave en query, si no en hash, y tolera Mayus/Minus
+    function getParamSmart(key) {
+      const variants = [key, key.toLowerCase(), key.toUpperCase(), capitalize(key)];
+      for (const k of variants) {
+        if (params.has(k)) return params.get(k);
+        if (hashParams.has(k)) return hashParams.get(k);
+      }
+      return "";
     }
-    .linea-punteada {
-      border-top: 1px dashed #d1d5db;
-      margin: 1rem 0;
+
+    function capitalize(s){ return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
+
+    // Seteo de campos
+    setText("fecha",    getParamSmart("fecha"));
+    setText("norecibo", getParamSmart("norecibo"));
+    setText("placa",    getParamSmart("placa"));
+    setText("ingreso",  getParamSmart("ingreso"));
+    setText("salida",   getParamSmart("salida"));
+    setText("total",    getParamSmart("total"));
+
+    // Precio opcional
+    const precio = getParamSmart("precio");
+    if (precio) {
+      setText("precio", precio);
+      const filaPrecio = document.getElementById("row-precio");
+      if (filaPrecio) filaPrecio.classList.remove("hidden");
     }
-    .imagen-container img{
-      display:block;
-      margin: 0 auto .5rem auto;
-      max-width: 100%;
-      height: auto;
-    }
-    .pie-justificado {
-      text-align: justify; /* fuerza justificado solo en pie */
-    }
-    @media print {
-      @page { size: 80mm auto; margin: 0; }
-      body { background: transparent; margin: 0; -webkit-print-color-adjust: exact; }
-      .recibo { box-shadow: none; margin: 0; border-radius: 0; }
-    }
-  </style>
-</head>
-<body onload="cargarDatos()">
 
-  <div class="recibo">
-    <!-- Logo dinámico (con fallback) -->
-    <div class="imagen-container">
-      <img id="logoRecibo"
-           src="https://raw.githubusercontent.com/MAGABY1527/serviparqueadero/main/servipark.jpeg"
-           alt="Logo Parqueadero">
-    </div>
+    // Logo dinámico
+    const imagenRuta = getParamSmart("imagen");
+    const imagenElement = document.getElementById("logoRecibo");
+    if (imagenRuta) imagenElement.src = imagenRuta;
 
-    <!-- Encabezado -->
-    <div class="text-sm leading-5 text-gray-900">
-      <div>NIT: 38431248-7</div>
-      <div>SUCURSAL 2</div>
-      <div>DIR: CALLE 14 # 3-50</div>
-    </div>
+    // Imprime luego de pintar
+    setTimeout(() => window.print(), 100);
+  }
 
-    <div class="linea-punteada"></div>
-
-    <!-- Cuerpo -->
-    <div class="space-y-2 text-sm text-center">
-      <div>
-        <span class="font-bold text-gray-700">Fecha:</span>
-        <span id="fecha" class="text-gray-900"></span>
-      </div>
-      <div>
-        <span class="font-bold text-gray-700">Recibo:</span>
-        <span id="norecibo" class="text-gray-900"></span>
-      </div>
-      <div>
-        <span class="font-bold text-gray-700">Placa:</span>
-        <span id="placa" class="text-gray-900"></span>
-      </div>
-      <div>
-        <span class="font-bold text-gray-700">Ingreso:</span>
-        <span id="ingreso" class="text-gray-900"></span>
-      </div>
-      <div>
-        <span class="font-bold text-gray-700">Salida:</span>
-        <span id="salida" class="text-gray-900"></span>
-      </div>
-
-      <!-- Opcional: mostrar precio -->
-      <div id="row-precio" class="hidden">
-        <span class="font-bold text-gray-700">Precio:</span>
-        <span id="precio" class="text-gray-900"></span>
-      </div>
-
-      <div class="linea-punteada"></div>
-
-      <div>
-        <span class="font-bold text-gray-700">Total:</span>
-        <span id="total" class="text-gray-900"></span>
-      </div>
-    </div>
-
-    <div class="linea-punteada"></div>
-
-    <!-- Pie de página justificado -->
-    <div class="mt-4 text-xs text-gray-500 pie-justificado">
-      <strong class="block text-center text-gray-800 text-sm mb-2">REGLAMENTO</strong>
-      OJO SI PASA DE LAS 7 P.M. SE QUEDA EL VEHÍCULO HASTA EL DÍA SIGUIENTE Y SE COBRARÁ JORNADA NOCTURNA, DEJAR VEHÍCULO SIN SEGURO.
-    </div>
-  </div>
-
-  <script>
-    function cargarDatos()
+  function setText(id, value) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = value || "";
+  }
+</script>
