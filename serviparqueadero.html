@@ -1,53 +1,136 @@
-<script>
-  function cargarDatos() {
-    const params = new URLSearchParams(window.location.search);
-
-    // Si no hay query (?a=b), intentamos con hash (#a=b)
-    let hashParams = new URLSearchParams();
-    if (!window.location.search && window.location.hash) {
-      const hash = window.location.hash.replace(/^#/, '');
-      hashParams = new URLSearchParams(hash);
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Recibo de Parqueadero</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #f0f2f5;
     }
+    .recibo {
+      width: 80mm;            /* ancho rollo */
+      max-width: 300px;
+      margin: 20px auto;
+      background-color: #ffffff;
+      padding: 1rem;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0,0,0,.1);
+    }
+    .linea-punteada {
+      border-top: 1px dashed #d1d5db;
+      margin: 1rem 0;
+    }
+    .imagen-container img{
+      display:block;
+      margin: 0 auto .5rem auto;
+      max-width: 100%;
+      height: auto;
+    }
+    @media print {
+      @page { size: mm auto; margin: 0; }
+      body { background: transparent; margin: 0; -webkit-print-color-adjust: exact; }
+      .recibo { box-shadow: none; margin: 0; border-radius: 0; }
+    }
+  </style>
+</head>
+<body onload="cargarDatos()">
 
-    // Helper: busca la clave en query, si no en hash, y tolera Mayus/Minus
-    function getParamSmart(key) {
-      const variants = [key, key.toLowerCase(), key.toUpperCase(), capitalize(key)];
-      for (const k of variants) {
-        if (params.has(k)) return params.get(k);
-        if (hashParams.has(k)) return hashParams.get(k);
+  <div class="recibo">
+    <!-- Logo dinámico (con fallback) -->
+    <div class="imagen-container">
+      <img id="logoRecibo"
+           src="https://raw.githubusercontent.com/MAGABY1527/serviparqueadero/main/servipark.jpeg"
+           alt="Logo Parqueadero">
+    </div>
+
+    <div class="text-sm leading-5 text-gray-900">
+      <div>NIT: 38431248-7</div>
+      <div>SUCURSAL 2</div>
+      <div>DIR: CALLE 14 # 3-50</div>
+    </div>
+
+    <div class="linea-punteada"></div>
+
+    <div class="space-y-2 text-sm">
+      <div class="flex justify-between">
+        <span class="font-bold text-gray-700">Fecha:</span>
+        <span id="fecha" class="text-gray-900"></span>
+      </div>
+      <div class="flex justify-between">
+        <span class="font-bold text-gray-700">Recibo:</span>
+        <span id="norecibo" class="text-gray-900"></span>
+      </div>
+      <div class="flex justify-between">
+        <span class="font-bold text-gray-700">Placa:</span>
+        <span id="placa" class="text-gray-900"></span>
+      </div>
+      <div class="flex justify-between">
+        <span class="font-bold text-gray-700">Ingreso:</span>
+        <span id="ingreso" class="text-gray-900"></span>
+      </div>
+      <div class="flex justify-between">
+        <span class="font-bold text-gray-700">Salida:</span>
+        <span id="salida" class="text-gray-900"></span> <!-- ojo: ID correcto -->
+      </div>
+
+      <!-- Opcional: mostrar precio -->
+      <div class="flex justify-between hidden" id="row-precio">
+        <span class="font-bold text-gray-700">Precio:</span>
+        <span id="precio" class="text-gray-900"></span>
+      </div>
+
+      <div class="linea-punteada"></div>
+
+      <div class="flex justify-between">
+        <span class="font-bold text-gray-700">Total:</span>
+        <span id="total" class="text-gray-900"></span>
+      </div>
+    </div>
+
+    <div class="linea-punteada"></div>
+
+    <div class="mt-4 text-xs text-gray-500 text-justify">
+      <strong class="block text-center text-gray-800 text-sm mb-2">REGLAMENTO</strong>
+      OJO SI PASA DE LAS 7 P.M. SE QUEDA EL VEHÍCULO HASTA EL DÍA SIGUIENTE Y SE COBRARÁ JORNADA NOCTURNA, DEJAR VEHÍCULO SIN SEGURO.
+    </div>
+  </div>
+
+  <script>
+    function cargarDatos() {
+      const params = new URLSearchParams(window.location.search);
+
+      // Campos visibles
+      setText("fecha",    params.get("fecha"));
+      setText("norecibo", params.get("norecibo"));
+      setText("placa",    params.get("placa"));
+      setText("ingreso",  params.get("ingreso"));
+      setText("salida",   params.get("salida"));
+      setText("total",    params.get("total"));
+
+      // Precio (si viene, muestro la fila)
+      const precio = params.get("precio");
+      if (precio) {
+        setText("precio", precio);
+        document.getElementById("row-precio").classList.remove("hidden");
       }
-      return "";
+
+      // Logo dinámico (si mandas ?imagen=URL)
+      const imagenRuta = params.get("imagen");
+      const imagenElement = document.getElementById("logoRecibo");
+      if (imagenRuta) imagenElement.src = imagenRuta;
+
+      // Imprime al cargar
+      window.print();
     }
 
-    function capitalize(s){ return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
-
-    // Seteo de campos
-    setText("fecha",    getParamSmart("fecha"));
-    setText("norecibo", getParamSmart("norecibo"));
-    setText("placa",    getParamSmart("placa"));
-    setText("ingreso",  getParamSmart("ingreso"));
-    setText("salida",   getParamSmart("salida"));
-    setText("total",    getParamSmart("total"));
-
-    // Precio opcional
-    const precio = getParamSmart("precio");
-    if (precio) {
-      setText("precio", precio);
-      const filaPrecio = document.getElementById("row-precio");
-      if (filaPrecio) filaPrecio.classList.remove("hidden");
+    function setText(id, value) {
+      const el = document.getElementById(id);
+      if (el) el.textContent = value || "";
     }
-
-    // Logo dinámico
-    const imagenRuta = getParamSmart("imagen");
-    const imagenElement = document.getElementById("logoRecibo");
-    if (imagenRuta) imagenElement.src = imagenRuta;
-
-    // Imprime luego de pintar
-    setTimeout(() => window.print(), 100);
-  }
-
-  function setText(id, value) {
-    const el = document.getElementById(id);
-    if (el) el.textContent = value || "";
-  }
-</script>
+  </script>
+</body>
+</html>
