@@ -1,162 +1,78 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Recibo de Parqueadero</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
-    body {
-      font-family: 'Inter', sans-serif;
-      background-color: #f0f2f5;
-    }
-    .recibo {
-      width: 80mm;            /* ancho rollo */
-      max-width: 300px;
-      margin: 20px auto;
-      background-color: #ffffff;
-      padding: 1rem;
-      border-radius: 8px;
-      box-shadow: 0 4px 6px rgba(0,0,0,.1);
-    }
-    .linea-punteada {
-      border-top: 1px dashed #d1d5db;
-      margin: 1rem 0;
-    }
-    .imagen-container {
-      min-height: 60px; /* asegura espacio para el logo */
-    }
-    .imagen-container img{
-      display:block;
-      margin: 0 auto .5rem auto;
-      max-width: 100%;
-      height: auto;
-    }
-    @media print {
-      @page { size: 80mm auto; margin: 0; }
-      body { background: transparent; margin: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-      .recibo { box-shadow: none; margin: 0; border-radius: 0; }
-    }
-  </style>
-</head>
-<body onload="cargarDatos()">
+<script>
+  async function cargarDatos() {
+    const params = new URLSearchParams(window.location.search);
 
-  <div class="recibo">
-    <!-- Logo dinámico (con fallback) -->
-    <div class="imagen-container">
-      <img id="logoRecibo"
-           src="https://raw.githubusercontent.com/MAGABY1527/serviparqueadero/main/servipark.jpg"
-           alt="Logo Parqueadero">
-    </div>
+    // Campos visibles
+    setText("fecha",    params.get("fecha"));
+    setText("norecibo", params.get("norecibo"));
+    setText("placa",    params.get("placa"));
+    setText("ingreso",  params.get("ingreso"));
+    setText("salida",   params.get("salida"));
+    setText("total",    params.get("total"));
 
-    <div class="text-sm leading-5 text-gray-900">
-      <div>NIT: 38431248-7</div>
-      <div>SUCURSAL 2</div>
-      <div>DIR: CALLE 14 # 3-50</div>
-    </div>
-
-    <div class="linea-punteada"></div>
-
-    <div class="space-y-2 text-sm">
-      <div class="flex justify-between">
-        <span class="font-bold text-gray-700">Fecha:</span>
-        <span id="fecha" class="text-gray-900"></span>
-      </div>
-      <div class="flex justify-between">
-        <span class="font-bold text-gray-700">Recibo:</span>
-        <span id="norecibo" class="text-gray-900"></span>
-      </div>
-      <div class="flex justify-between">
-        <span class="font-bold text-gray-700">Placa:</span>
-        <span id="placa" class="text-gray-900"></span>
-      </div>
-      <div class="flex justify-between">
-        <span class="font-bold text-gray-700">Ingreso:</span>
-        <span id="ingreso" class="text-gray-900"></span>
-      </div>
-      <div class="flex justify-between">
-        <span class="font-bold text-gray-700">Salida:</span>
-        <span id="salida" class="text-gray-900"></span>
-      </div>
-
-      <!-- Opcional: mostrar precio -->
-      <div class="flex justify-between hidden" id="row-precio">
-        <span class="font-bold text-gray-700">Precio:</span>
-        <span id="precio" class="text-gray-900"></span>
-      </div>
-
-      <div class="linea-punteada"></div>
-
-      <div class="flex justify-between">
-        <span class="font-bold text-gray-700">Total:</span>
-        <span id="total" class="text-gray-900"></span>
-      </div>
-    </div>
-
-    <div class="linea-punteada"></div>
-
-    <div class="mt-4 text-xs text-gray-500 text-justify">
-      <strong class="block text-center text-gray-800 text-sm mb-2">REGLAMENTO</strong>
-      OJO SI PASA DE LAS 7 P.M. SE QUEDA EL VEHÍCULO HASTA EL DÍA SIGUIENTE Y SE COBRARÁ JORNADA NOCTURNA, DEJAR VEHÍCULO SIN SEGURO.
-    </div>
-  </div>
-
-  <script>
-    async function cargarDatos() {
-      const params = new URLSearchParams(window.location.search);
-
-      // Campos visibles
-      setText("fecha",    params.get("fecha"));
-      setText("norecibo", params.get("norecibo"));
-      setText("placa",    params.get("placa"));
-      setText("ingreso",  params.get("ingreso"));
-      setText("salida",   params.get("salida"));
-      setText("total",    params.get("total"));
-
-      // Precio opcional
-      const precio = params.get("precio");
-      if (precio) {
-        setText("precio", precio);
-        document.getElementById("row-precio").classList.remove("hidden");
-      }
-
-      // Logo dinámico (si mandas ?imagen=URL)
-      const imagenRuta = params.get("imagen");
-      const imagenElement = document.getElementById("logoRecibo");
-      if (imagenRuta) imagenElement.src = imagenRuta;
-
-      // Esperar: fuentes + imagen
-      try {
-        if (document.fonts && document.fonts.ready) {
-          await document.fonts.ready;
-        }
-        await waitForImage(imagenElement);
-      } catch (e) {
-        console.warn("No se pudo confirmar carga antes de imprimir:", e);
-      }
-
-      setTimeout(() => window.print(), 50);
+    // Precio opcional
+    const precio = params.get("precio");
+    if (precio) {
+      setText("precio", precio);
+      document.getElementById("row-precio").classList.remove("hidden");
     }
 
-    function setText(id, value) {
-      const el = document.getElementById(id);
-      if (el) el.textContent = value || "";
+    // URL del logo: si no viene por param, usa la tuya por defecto
+    const urlLogo = params.get("imagen")
+      || "https://raw.githubusercontent.com/MAGABY1527/serviparqueadero/main/servipark.jpg";
+
+    // 1) Descarga el logo y conviértelo a data URL (Base64)
+    const dataUrl = await toDataURL(urlLogo);
+
+    // 2) Colócalo en el <img> y espera a que se “decodifique”
+    const logo = document.getElementById("logoRecibo");
+    logo.src = dataUrl;
+    if (logo.decode) {
+      try { await logo.decode(); } catch (_) {}
+    } else {
+      await waitForImage(logo);
     }
 
-    function waitForImage(img) {
-      if (!img) return Promise.resolve();
-      if (img.complete) return Promise.resolve();
-      return new Promise((resolve) => {
-        img.addEventListener("load", resolve, { once: true });
-        img.addEventListener("error", resolve, { once: true });
-      });
+    // 3) (Opcional) Espera fuentes si usas Google Fonts
+    if (document.fonts && document.fonts.ready) {
+      try { await document.fonts.ready; } catch (_) {}
     }
 
-    window.addEventListener("beforeprint", async () => {
-      const img = document.getElementById("logoRecibo");
-      await waitForImage(img);
+    // 4) Imprime con un micro-delay para asegurar el reflow final
+    setTimeout(() => window.print(), 50);
+  }
+
+  function setText(id, value) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = value || "";
+  }
+
+  function waitForImage(img) {
+    if (!img) return Promise.resolve();
+    if (img.complete) return Promise.resolve();
+    return new Promise((resolve) => {
+      img.addEventListener("load", resolve, { once: true });
+      img.addEventListener("error", resolve, { once: true });
     });
-  </script>
-</body>
-</html>
+  }
+
+  async function toDataURL(url) {
+    // Evita caché para que el navegador no “pierda” la imagen en el re-render
+    const res = await fetch(url, { cache: "reload", mode: "cors" });
+    const blob = await res.blob();
+    // Convierte a Base64
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  }
+
+  // Asegura que, si el sistema reabre el diálogo, el logo ya esté embebido
+  window.addEventListener("beforeprint", () => {
+    const img = document.getElementById("logoRecibo");
+    // Forzamos visibilidad por si el motor de impresión intenta ocultarlo
+    img.style.visibility = "visible";
+  });
+</script>
