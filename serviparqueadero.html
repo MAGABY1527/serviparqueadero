@@ -1,124 +1,54 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Recibo de Parqueadero</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
-    body { font-family: 'Inter', sans-serif; background-color: #f0f2f5; }
-    .recibo {
-      width: 80mm; max-width: 300px; margin: 20px auto; background-color: #ffffff;
-      padding: 1rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,.1);
-    }
-    .linea-punteada { border-top: 1px dashed #d1d5db; margin: 1rem 0; }
-    .imagen-container { text-align: center; margin-bottom: .5rem; }
-    .imagen-container img { display:block; margin: 0 auto; max-width: 100%; height: auto; }
-    @media print {
-      @page { size: 80mm auto; margin: 0; }
-      body { background: transparent; margin: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-      .recibo { box-shadow: none; margin: 0; border-radius: 0; }
-      .imagen-container img { visibility: visible !important; }
-    }
-  </style>
-</head>
-<body onload="cargarDatos()">
+<script>
+async function cargarDatos() {
+  const params = new URLSearchParams(window.location.search);
 
-  <div class="recibo">
-    <!-- Imagen dinámica -->
-    <div class="imagen-container">
-      <img id="imagen" alt="Logo/Imagen Parqueadero">
-    </div>
+  const imgEl = document.getElementById("imagen");
+  let urlImg = params.get("imagen");
 
-    <div class="text-sm leading-5 text-gray-900">
-      <div>NIT: 38431248-7</div>
-      <div>SUCURSAL 2</div>
-      <div>DIR: CALLE 14 # 3-50</div>
-    </div>
+  // Fallback a tu logo en GitHub si no llega o falla
+  if (!urlImg) {
+    urlImg = "https://raw.githubusercontent.com/MAGABY1527/serviparqueadero/main/servipark.jpg";
+  }
 
-    <div class="linea-punteada"></div>
+  try {
+    const dataUrl = await toDataURL(urlImg);
+    imgEl.src = dataUrl;
+  } catch (e) {
+    console.warn("No se pudo convertir a base64, usando directo:", e);
+    imgEl.src = urlImg;
+  }
 
-    <div class="space-y-2 text-sm">
-      <div class="flex justify-between"><span class="font-bold text-gray-700">Fecha:</span><span id="fecha" class="text-gray-900"></span></div>
-      <div class="flex justify-between"><span class="font-bold text-gray-700">Recibo:</span><span id="norecibo" class="text-gray-900"></span></div>
-      <div class="flex justify-between"><span class="font-bold text-gray-700">Placa:</span><span id="placa" class="text-gray-900"></span></div>
-      <div class="flex justify-between"><span class="font-bold text-gray-700">Ingreso:</span><span id="ingreso" class="text-gray-900"></span></div>
-      <div class="flex justify-between"><span class="font-bold text-gray-700">Salida:</span><span id="salida" class="text-gray-900"></span></div>
+  // Resto de campos
+  setText("fecha", params.get("fecha"));
+  setText("norecibo", params.get("norecibo"));
+  setText("placa", params.get("placa"));
+  setText("ingreso", params.get("ingreso"));
+  setText("salida", params.get("salida"));
+  setText("total", params.get("total"));
 
-      <!-- Opcional: mostrar precio -->
-      <div class="flex justify-between hidden" id="row-precio">
-        <span class="font-bold text-gray-700">Precio:</span>
-        <span id="precio" class="text-gray-900"></span>
-      </div>
+  const precio = params.get("precio");
+  if (precio) {
+    setText("precio", precio);
+    document.getElementById("row-precio").classList.remove("hidden");
+  }
 
-      <div class="linea-punteada"></div>
+  window.print();
+}
 
-      <div class="flex justify-between"><span class="font-bold text-gray-700">Total:</span><span id="total" class="text-gray-900"></span></div>
-    </div>
+function setText(id, value) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = value || "";
+}
 
-    <div class="linea-punteada"></div>
-
-    <div class="mt-4 text-xs text-gray-500 text-justify">
-      <strong class="block text-center text-gray-800 text-sm mb-2">REGLAMENTO</strong>
-      OJO SI PASA DE LAS 7 P.M. SE QUEDA EL VEHÍCULO HASTA EL DÍA SIGUIENTE Y SE COBRARÁ JORNADA NOCTURNA, DEJAR VEHÍCULO SIN SEGURO.
-    </div>
-  </div>
-
-  <script>
-    async function cargarDatos() {
-      const params = new URLSearchParams(window.location.search);
-
-      // Imagen dinámica (convertida a Base64)
-      const urlImg = params.get("imagen");
-      const imgEl = document.getElementById("imagen");
-      if (urlImg) {
-        try {
-          const dataUrl = await toDataURL(urlImg);
-          imgEl.src = dataUrl;
-        } catch (e) {
-          console.error("No se pudo convertir la imagen:", e);
-          imgEl.src = urlImg; // fallback si falla la conversión
-        }
-      } else {
-        imgEl.style.display = "none"; // ocultar si no hay imagen
-      }
-
-      // Campos visibles
-      setText("fecha",    params.get("fecha"));
-      setText("norecibo", params.get("norecibo"));
-      setText("placa",    params.get("placa"));
-      setText("ingreso",  params.get("ingreso"));
-      setText("salida",   params.get("salida"));
-      setText("total",    params.get("total"));
-
-      // Precio (si viene, mostrar la fila)
-      const precio = params.get("precio");
-      if (precio) {
-        setText("precio", precio);
-        document.getElementById("row-precio").classList.remove("hidden");
-      }
-
-      // Imprimir automáticamente
-      window.print();
-    }
-
-    function setText(id, value) {
-      const el = document.getElementById(id);
-      if (el) el.textContent = value || "";
-    }
-
-    async function toDataURL(url) {
-      const res = await fetch(url, { mode: "cors" });
-      if (!res.ok) throw new Error("Error al descargar imagen");
-      const blob = await res.blob();
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result);
-        reader.onerror = reject;
-        reader.readAsDataURL(blob);
-      });
-    }
-  </script>
-</body>
-</html>
+async function toDataURL(url) {
+  const res = await fetch(url, {mode: "cors"});
+  if (!res.ok) throw new Error("Error HTTP " + res.status);
+  const blob = await res.blob();
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+</script>
