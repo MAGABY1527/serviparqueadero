@@ -26,7 +26,7 @@
 <body onload="cargarDatos()">
 
   <div class="recibo">
-    <!-- Imagen dinámica (arriba, centrada) -->
+    <!-- Imagen dinámica -->
     <div class="imagen-container">
       <img id="imagen" alt="Logo/Imagen Parqueadero">
     </div>
@@ -66,16 +66,22 @@
   </div>
 
   <script>
-    function cargarDatos() {
+    async function cargarDatos() {
       const params = new URLSearchParams(window.location.search);
 
-      // Imagen dinámica
-      const imgEl = document.getElementById("imagen");
+      // Imagen dinámica (convertida a Base64)
       const urlImg = params.get("imagen");
+      const imgEl = document.getElementById("imagen");
       if (urlImg) {
-        imgEl.src = urlImg;
+        try {
+          const dataUrl = await toDataURL(urlImg);
+          imgEl.src = dataUrl;
+        } catch (e) {
+          console.error("No se pudo convertir la imagen:", e);
+          imgEl.src = urlImg; // fallback si falla la conversión
+        }
       } else {
-        imgEl.style.display = "none"; // si no hay imagen, ocultar
+        imgEl.style.display = "none"; // ocultar si no hay imagen
       }
 
       // Campos visibles
@@ -100,6 +106,18 @@
     function setText(id, value) {
       const el = document.getElementById(id);
       if (el) el.textContent = value || "";
+    }
+
+    async function toDataURL(url) {
+      const res = await fetch(url, { mode: "cors" });
+      if (!res.ok) throw new Error("Error al descargar imagen");
+      const blob = await res.blob();
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
     }
   </script>
 </body>
