@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Recibo de Parqueadero</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="preload" as="image" href="https://raw.githubusercontent.com/MAGABY1527/serviparqueadero/main/servipark.jpg">
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
     body { font-family: 'Inter', sans-serif; background-color: #f0f2f5; }
@@ -14,26 +13,30 @@
       padding: 1rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,.1);
     }
     .linea-punteada { border-top: 1px dashed #d1d5db; margin: 1rem 0; }
-    .imagen-container { min-height: 60px; }
-    .imagen-container img { display:block; margin: 0 auto .5rem auto; max-width: 100%; height: auto; }
+    .imagen-container {
+      text-align: center;
+      margin-bottom: .5rem;
+    }
+    .imagen-container span {
+      display: block;
+      font-weight: bold;
+      font-size: 1.1rem;
+      color: #111827;
+      word-break: break-word; /* por si viene largo (ej: URL) */
+    }
     @media print {
       @page { size: 80mm auto; margin: 0; }
       body { background: transparent; margin: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
       .recibo { box-shadow: none; margin: 0; border-radius: 0; }
-      .imagen-container img { visibility: visible !important; opacity: 1 !important; }
     }
   </style>
 </head>
 <body onload="cargarDatos()">
 
   <div class="recibo">
+    <!-- Aquí va el campo Imagen en vez del logo -->
     <div class="imagen-container">
-      <!-- Añadimos crossorigin y referrerpolicy para evitar bloqueos de hotlink/CORS -->
-      <img id="logoRecibo"
-           src="https://raw.githubusercontent.com/MAGABY1527/serviparqueadero/main/servipark.jpg"
-           alt="Logo Parqueadero"
-           crossorigin="anonymous"
-           referrerpolicy="no-referrer">
+      <span id="imagen"></span>
     </div>
 
     <div class="text-sm leading-5 text-gray-900">
@@ -45,12 +48,28 @@
     <div class="linea-punteada"></div>
 
     <div class="space-y-2 text-sm">
-      <div class="flex justify-between"><span class="font-bold text-gray-700">Fecha:</span><span id="fecha" class="text-gray-900"></span></div>
-      <div class="flex justify-between"><span class="font-bold text-gray-700">Recibo:</span><span id="norecibo" class="text-gray-900"></span></div>
-      <div class="flex justify-between"><span class="font-bold text-gray-700">Placa:</span><span id="placa" class="text-gray-900"></span></div>
-      <div class="flex justify-between"><span class="font-bold text-gray-700">Ingreso:</span><span id="ingreso" class="text-gray-900"></span></div>
-      <div class="flex justify-between"><span class="font-bold text-gray-700">Salida:</span><span id="salida" class="text-gray-900"></span></div>
+      <div class="flex justify-between">
+        <span class="font-bold text-gray-700">Fecha:</span>
+        <span id="fecha" class="text-gray-900"></span>
+      </div>
+      <div class="flex justify-between">
+        <span class="font-bold text-gray-700">Recibo:</span>
+        <span id="norecibo" class="text-gray-900"></span>
+      </div>
+      <div class="flex justify-between">
+        <span class="font-bold text-gray-700">Placa:</span>
+        <span id="placa" class="text-gray-900"></span>
+      </div>
+      <div class="flex justify-between">
+        <span class="font-bold text-gray-700">Ingreso:</span>
+        <span id="ingreso" class="text-gray-900"></span>
+      </div>
+      <div class="flex justify-between">
+        <span class="font-bold text-gray-700">Salida:</span>
+        <span id="salida" class="text-gray-900"></span>
+      </div>
 
+      <!-- Opcional: mostrar precio -->
       <div class="flex justify-between hidden" id="row-precio">
         <span class="font-bold text-gray-700">Precio:</span>
         <span id="precio" class="text-gray-900"></span>
@@ -58,7 +77,10 @@
 
       <div class="linea-punteada"></div>
 
-      <div class="flex justify-between"><span class="font-bold text-gray-700">Total:</span><span id="total" class="text-gray-900"></span></div>
+      <div class="flex justify-between">
+        <span class="font-bold text-gray-700">Total:</span>
+        <span id="total" class="text-gray-900"></span>
+      </div>
     </div>
 
     <div class="linea-punteada"></div>
@@ -70,84 +92,31 @@
   </div>
 
   <script>
-    async function cargarDatos() {
+    function cargarDatos() {
       const params = new URLSearchParams(window.location.search);
 
       // Campos visibles
       setText("fecha",    params.get("fecha"));
       setText("norecibo", params.get("norecibo"));
       setText("placa",    params.get("placa"));
+      setText("imagen",   params.get("imagen")); // 👈 ahora el campo imagen arriba
       setText("ingreso",  params.get("ingreso"));
       setText("salida",   params.get("salida"));
       setText("total",    params.get("total"));
 
-      // Precio opcional
+      // Precio (si viene, mostrar la fila)
       const precio = params.get("precio");
       if (precio) {
         setText("precio", precio);
         document.getElementById("row-precio").classList.remove("hidden");
       }
 
-      const imgEl = document.getElementById("logoRecibo");
-      const urlParam = params.get("imagen");
-      const originalURL = urlParam || imgEl.getAttribute("src");
-
-      // 1) Espera fuentes (opcional)
-      if (document.fonts && document.fonts.ready) {
-        try { await document.fonts.ready; } catch(_) {}
-      }
-
-      // 2) Intento A: convertir a dataURL (para que no "desaparezca" al imprimir)
-      let embeddedOK = false;
-      try {
-        const dataUrl = await toDataURL(originalURL);
-        imgEl.src = dataUrl;
-        if (imgEl.decode) { try { await imgEl.decode(); } catch(_) {} }
-        else { await waitForImage(imgEl); }
-        embeddedOK = true;
-      } catch (e) {
-        // 3) Fallback: usar la URL directa y solo esperar carga normal
-        console.warn("No se pudo embeber el logo (CORS/red). Uso URL directa:", e);
-        imgEl.src = originalURL;
-        await waitForImage(imgEl);
-      }
-
-      // 4) Refuerzos de visibilidad justo antes de imprimir
-      window.addEventListener("beforeprint", () => {
-        imgEl.style.visibility = "visible";
-        imgEl.style.opacity = "1";
-      });
-
-      // 5) Imprimir: dos disparos escalonados (algunos Chrome corrigen en el segundo)
-      setTimeout(() => window.print(), 80);
-      setTimeout(() => window.print(), 300);
+      window.print();
     }
 
     function setText(id, value) {
       const el = document.getElementById(id);
       if (el) el.textContent = value || "";
-    }
-
-    function waitForImage(img) {
-      if (!img) return Promise.resolve();
-      if (img.complete) return Promise.resolve();
-      return new Promise((resolve) => {
-        img.addEventListener("load", resolve, { once: true });
-        img.addEventListener("error", resolve, { once: true });
-      });
-    }
-
-    async function toDataURL(url) {
-      // Si se sirve sin CORS correcto, esto lanzará; por eso hay fallback arriba.
-      const res = await fetch(url, { cache: "reload", mode: "cors", credentials: "omit" });
-      if (!res.ok) throw new Error("HTTP " + res.status);
-      const blob = await res.blob();
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = reject;
-        reader.readAsDataURL(blob);
-      });
     }
   </script>
 </body>
