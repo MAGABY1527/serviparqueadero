@@ -24,6 +24,9 @@
       border-top: 1px dashed #d1d5db;
       margin: 1rem 0;
     }
+    .imagen-container {
+      min-height: 60px; /* asegura espacio para el logo */
+    }
     .imagen-container img{
       display:block;
       margin: 0 auto .5rem auto;
@@ -31,8 +34,8 @@
       height: auto;
     }
     @media print {
-      @page { size: mm auto; margin: 0; }
-      body { background: transparent; margin: 0; -webkit-print-color-adjust: exact; }
+      @page { size: 80mm auto; margin: 0; }
+      body { background: transparent; margin: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
       .recibo { box-shadow: none; margin: 0; border-radius: 0; }
     }
   </style>
@@ -74,7 +77,7 @@
       </div>
       <div class="flex justify-between">
         <span class="font-bold text-gray-700">Salida:</span>
-        <span id="salida" class="text-gray-900"></span> <!-- ojo: ID correcto -->
+        <span id="salida" class="text-gray-900"></span>
       </div>
 
       <!-- Opcional: mostrar precio -->
@@ -100,7 +103,7 @@
   </div>
 
   <script>
-    function cargarDatos() {
+    async function cargarDatos() {
       const params = new URLSearchParams(window.location.search);
 
       // Campos visibles
@@ -111,7 +114,7 @@
       setText("salida",   params.get("salida"));
       setText("total",    params.get("total"));
 
-      // Precio (si viene, muestro la fila)
+      // Precio opcional
       const precio = params.get("precio");
       if (precio) {
         setText("precio", precio);
@@ -123,14 +126,37 @@
       const imagenElement = document.getElementById("logoRecibo");
       if (imagenRuta) imagenElement.src = imagenRuta;
 
-      // Imprime al cargar
-      window.print();
+      // Esperar: fuentes + imagen
+      try {
+        if (document.fonts && document.fonts.ready) {
+          await document.fonts.ready;
+        }
+        await waitForImage(imagenElement);
+      } catch (e) {
+        console.warn("No se pudo confirmar carga antes de imprimir:", e);
+      }
+
+      setTimeout(() => window.print(), 50);
     }
 
     function setText(id, value) {
       const el = document.getElementById(id);
       if (el) el.textContent = value || "";
     }
+
+    function waitForImage(img) {
+      if (!img) return Promise.resolve();
+      if (img.complete) return Promise.resolve();
+      return new Promise((resolve) => {
+        img.addEventListener("load", resolve, { once: true });
+        img.addEventListener("error", resolve, { once: true });
+      });
+    }
+
+    window.addEventListener("beforeprint", async () => {
+      const img = document.getElementById("logoRecibo");
+      await waitForImage(img);
+    });
   </script>
 </body>
 </html>
